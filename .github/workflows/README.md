@@ -4,28 +4,20 @@ Thư mục này chứa GitHub Actions workflow cho CI/CD pipeline.
 
 ## 📋 Workflow
 
-### `ci-cd.yml` - CI/CD Pipeline chính
+### `ci-cd.yml` - CI Pipeline
 
 **Trigger:**
 - Push vào `main`, `master`, `develop`
 - Pull Request vào `main`, `master`
 - Manual trigger (workflow_dispatch)
 
-**Jobs:**
-
-1. **Build and Test**
-   - Checkout code
-   - Setup Node.js 18.x
-   - Install dependencies
-   - Run tests
-   - Lint code
-   - Build application
-
-2. **Deploy to Railway** (Optional)
-   - Chỉ chạy khi:
-     - Push vào `main` hoặc `master`
-     - Có Railway token trong Secrets
-   - Tự động deploy lên Railway.app sau khi build thành công
+**Job duy nhất: Build and Test**
+- Checkout code
+- Setup Node.js 18.x
+- Install dependencies
+- Run tests
+- Lint code
+- Build application
 
 ## 🔑 Setup Secrets
 
