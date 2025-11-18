@@ -2,8 +2,11 @@ const API_URL = window.location.origin + '/api';
 
 let statusChart = null;
 let timeChart = null;
+const numberAnimations = {}; // Store active animations
 
 // Load dashboard on page load
+let isLoading = false; // Prevent multiple simultaneous loads
+
 document.addEventListener('DOMContentLoaded', () => {
     loadStats();
     checkApiHealth();
@@ -12,6 +15,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // Load all statistics
 async function loadStats() {
+    // Prevent multiple simultaneous loads
+    if (isLoading) {
+        return;
+    }
+    
+    isLoading = true;
     try {
         const response = await fetch(`${API_URL}/items`);
         const result = await response.json();
@@ -27,6 +36,8 @@ async function loadStats() {
         }
     } catch (error) {
         showError('Lỗi kết nối: ' + error.message);
+    } finally {
+        isLoading = false;
     }
 }
 
@@ -48,21 +59,47 @@ function animateNumber(elementId, value) {
     const element = document.getElementById(elementId);
     if (!element) return;
 
+    // Clear existing animation for this element
+    if (numberAnimations[elementId]) {
+        clearInterval(numberAnimations[elementId]);
+        delete numberAnimations[elementId];
+    }
+
     const currentValue = parseInt(element.textContent) || 0;
+    
+    // If value hasn't changed, don't animate
+    if (currentValue === value) {
+        return;
+    }
+
     const increment = value > currentValue ? 1 : -1;
     const duration = 500;
     const steps = Math.abs(value - currentValue);
-    const stepDuration = duration / steps;
+    
+    // Prevent division by zero
+    if (steps === 0) {
+        element.textContent = value;
+        return;
+    }
+
+    const stepDuration = Math.max(10, duration / steps); // Minimum 10ms per step
 
     let current = currentValue;
     const timer = setInterval(() => {
         current += increment;
-        element.textContent = current;
         
-        if (current === value) {
+        // Check if we've reached the target
+        if ((increment > 0 && current >= value) || (increment < 0 && current <= value)) {
+            element.textContent = value;
             clearInterval(timer);
+            delete numberAnimations[elementId];
+        } else {
+            element.textContent = current;
         }
     }, stepDuration);
+
+    // Store timer reference
+    numberAnimations[elementId] = timer;
 }
 
 // Update charts
