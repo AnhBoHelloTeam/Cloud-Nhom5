@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Hệ Thống Quản Lý</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="dashboard.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="background-animation"></div>
+    <div class="dashboard-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">🚀</div>
+                <h2>System Management</h2>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="index.html" class="nav-item">
+                    <span class="nav-icon">📋</span>
+                    <span class="nav-text">Quản Lý Items</span>
+                </a>
+                <a href="dashboard.html" class="nav-item active">
+                    <span class="nav-icon">📊</span>
+                    <span class="nav-text">Dashboard</span>
+                </a>
+                <a href="#" class="nav-item" onclick="loadStats()">
+                    <span class="nav-icon">🔄</span>
+                    <span class="nav-text">Làm Mới</span>
+                </a>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header class="dashboard-header">
+                <h1>📊 Dashboard Quản Lý Hệ Thống</h1>
+                <p>Thống kê và báo cáo tổng quan</p>
+            </header>
+
+            <!-- Stats Cards -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                        📦
+                    </div>
+                    <div class="stat-content">
+                        <h3 id="total-items-stat">0</h3>
+                        <p>Tổng Items</p>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
+                        ✅
+                    </div>
+                    <div class="stat-content">
+                        <h3 id="active-items-stat">0</h3>
+                        <p>Items Active</p>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);">
+                        ⏳
+                    </div>
+                    <div class="stat-content">
+                        <h3 id="pending-items-stat">0</h3>
+                        <p>Items Pending</p>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon" style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);">
+                        ⏸️
+                    </div>
+                    <div class="stat-content">
+                        <h3 id="inactive-items-stat">0</h3>
+                        <p>Items Inactive</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts Section -->
+            <div class="charts-grid">
+                <div class="chart-card">
+                    <h3>📈 Phân Bố Trạng Thái</h3>
+                    <div class="chart-container">
+                        <canvas id="statusChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="chart-card">
+                    <h3>📅 Items Theo Thời Gian</h3>
+                    <div class="chart-container">
+                        <canvas id="timeChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Items -->
+            <div class="recent-section">
+                <h2>🕐 Items Mới Nhất</h2>
+                <div id="recent-items" class="recent-items-list"></div>
+            </div>
+
+            <!-- System Info -->
+            <div class="system-info-grid">
+                <div class="info-card">
+                    <h3>🔧 Thông Tin Hệ Thống</h3>
+                    <div class="info-list">
+                        <div class="info-item">
+                            <span class="info-label">Backend:</span>
+                            <span class="info-value">Node.js + Express</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Database:</span>
+                            <span class="info-value">MySQL</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Deployment:</span>
+                            <span class="info-value">Railway.app</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">API Status:</span>
+                            <span class="info-value" id="api-status">Checking...</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <h3>📊 Thống Kê Nhanh</h3>
+                    <div class="info-list">
+                        <div class="info-item">
+                            <span class="info-label">Tỷ lệ Active:</span>
+                            <span class="info-value" id="active-percentage">0%</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Items hôm nay:</span>
+                            <span class="info-value" id="today-items">0</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Items tuần này:</span>
+                            <span class="info-value" id="week-items">0</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Cập nhật lần cuối:</span>
+                            <span class="info-value" id="last-update">-</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="dashboard.js"></script>
+</body>
+</html>
+

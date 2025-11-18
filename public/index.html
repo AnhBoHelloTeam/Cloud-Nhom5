@@ -5,48 +5,100 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Hệ Thống Quản Lý - CRUD Application</title>
     <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 </head>
 <body>
+    <div class="background-animation"></div>
     <div class="container">
         <header>
-            <h1>🚀 Hệ Thống Quản Lý Items</h1>
-            <p>Node.js + MySQL + Railway.app</p>
+            <div class="header-content">
+                <div class="header-icon">🚀</div>
+                <div>
+                    <h1>Hệ Thống Quản Lý Items</h1>
+                    <p>Node.js + MySQL + Railway.app</p>
+                </div>
+            </div>
+            <div class="header-actions">
+                <a href="dashboard.html" class="header-btn">
+                    <span>📊</span>
+                    <span>Dashboard</span>
+                </a>
+            </div>
+            <div class="header-stats" id="header-stats">
+                <div class="stat-item">
+                    <span class="stat-number" id="total-items">0</span>
+                    <span class="stat-label">Tổng Items</span>
+                </div>
+            </div>
         </header>
 
         <div class="form-section">
-            <h2 id="form-title">Thêm Item Mới</h2>
+            <div class="section-header">
+                <h2 id="form-title">
+                    <span class="icon">➕</span>
+                    Thêm Item Mới
+                </h2>
+            </div>
             <form id="item-form">
                 <input type="hidden" id="item-id">
                 
                 <div class="form-group">
-                    <label for="name">Tên Item *</label>
-                    <input type="text" id="name" required placeholder="Nhập tên item">
+                    <label for="name">
+                        <span class="label-icon">📝</span>
+                        Tên Item <span class="required">*</span>
+                    </label>
+                    <input type="text" id="name" required placeholder="Nhập tên item...">
                 </div>
 
                 <div class="form-group">
-                    <label for="description">Mô tả</label>
-                    <textarea id="description" rows="3" placeholder="Nhập mô tả"></textarea>
+                    <label for="description">
+                        <span class="label-icon">📄</span>
+                        Mô tả
+                    </label>
+                    <textarea id="description" rows="4" placeholder="Nhập mô tả chi tiết..."></textarea>
                 </div>
 
                 <div class="form-group">
-                    <label for="status">Trạng thái</label>
+                    <label for="status">
+                        <span class="label-icon">⚡</span>
+                        Trạng thái
+                    </label>
                     <select id="status">
-                        <option value="active">Active</option>
-                        <option value="inactive">Inactive</option>
-                        <option value="pending">Pending</option>
+                        <option value="active">✅ Active</option>
+                        <option value="inactive">⏸️ Inactive</option>
+                        <option value="pending">⏳ Pending</option>
                     </select>
                 </div>
 
                 <div class="form-actions">
-                    <button type="submit" id="submit-btn">Thêm Item</button>
-                    <button type="button" id="cancel-btn" style="display: none;" onclick="cancelEdit()">Hủy</button>
+                    <button type="submit" id="submit-btn" class="btn-primary">
+                        <span class="btn-icon">💾</span>
+                        <span class="btn-text">Thêm Item</span>
+                    </button>
+                    <button type="button" id="cancel-btn" class="btn-secondary" style="display: none;" onclick="cancelEdit()">
+                        <span class="btn-icon">❌</span>
+                        <span class="btn-text">Hủy</span>
+                    </button>
                 </div>
             </form>
         </div>
 
         <div class="items-section">
-            <h2>Danh Sách Items</h2>
-            <div id="loading" class="loading">Đang tải...</div>
+            <div class="section-header">
+                <h2>
+                    <span class="icon">📋</span>
+                    Danh Sách Items
+                </h2>
+                <div class="section-actions">
+                    <button class="btn-refresh" onclick="loadItems()" title="Làm mới">
+                        🔄
+                    </button>
+                </div>
+            </div>
+            <div id="loading" class="loading">
+                <div class="spinner"></div>
+                <p>Đang tải dữ liệu...</p>
+            </div>
             <div id="items-list" class="items-list"></div>
         </div>
     </div>

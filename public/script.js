@@ -22,11 +22,21 @@ async function loadItems() {
         loading.style.display = 'none';
         
         if (result.success) {
+            updateTotalItems(result.data.length);
             if (result.data.length === 0) {
-                itemsList.innerHTML = '<div class="empty-state"><p>Chưa có item nào. Hãy thêm item mới!</p></div>';
+                itemsList.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon">📭</div>
+                        <p>Chưa có item nào. Hãy thêm item mới!</p>
+                    </div>
+                `;
             } else {
-                result.data.forEach(item => {
-                    itemsList.appendChild(createItemCard(item));
+                result.data.forEach((item, index) => {
+                    const card = createItemCard(item);
+                    card.style.animationDelay = `${index * 0.1}s`;
+                    card.style.opacity = '0';
+                    card.style.animation = 'slideUp 0.5s ease-out forwards';
+                    itemsList.appendChild(card);
                 });
             }
         } else {
@@ -42,18 +52,40 @@ async function loadItems() {
 function createItemCard(item) {
     const card = document.createElement('div');
     card.className = 'item-card';
+    
+    const statusIcons = {
+        active: '✅',
+        inactive: '⏸️',
+        pending: '⏳'
+    };
+    
+    const statusLabels = {
+        active: 'Active',
+        inactive: 'Inactive',
+        pending: 'Pending'
+    };
+    
     card.innerHTML = `
         <div class="item-info">
             <h3>${escapeHtml(item.name)}</h3>
             <p>${escapeHtml(item.description || 'Không có mô tả')}</p>
-            <span class="status ${item.status}">${item.status}</span>
-            <p style="font-size: 0.85em; color: #999; margin-top: 8px;">
-                Tạo: ${new Date(item.created_at).toLocaleString('vi-VN')}
-            </p>
+            <span class="status ${item.status}">
+                ${statusIcons[item.status] || '⚪'} ${statusLabels[item.status] || item.status}
+            </span>
+            <div class="item-meta">
+                <span>📅 ${new Date(item.created_at).toLocaleDateString('vi-VN')}</span>
+                <span>🕐 ${new Date(item.created_at).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}</span>
+            </div>
         </div>
         <div class="item-actions">
-            <button class="btn-edit" onclick="editItem(${item.id})">Sửa</button>
-            <button class="btn-delete" onclick="deleteItem(${item.id})">Xóa</button>
+            <button class="btn-edit" onclick="editItem(${item.id})">
+                <span>✏️</span>
+                <span>Sửa</span>
+            </button>
+            <button class="btn-delete" onclick="deleteItem(${item.id})">
+                <span>🗑️</span>
+                <span>Xóa</span>
+            </button>
         </div>
     `;
     return card;
@@ -102,6 +134,19 @@ async function handleSubmit(e) {
     }
 }
 
+// Update total items count
+function updateTotalItems(count) {
+    const totalItemsEl = document.getElementById('total-items');
+    if (totalItemsEl) {
+        totalItemsEl.textContent = count;
+        // Animate number change
+        totalItemsEl.style.transform = 'scale(1.2)';
+        setTimeout(() => {
+            totalItemsEl.style.transform = 'scale(1)';
+        }, 200);
+    }
+}
+
 // Edit item
 async function editItem(id) {
     try {
@@ -115,12 +160,16 @@ async function editItem(id) {
             document.getElementById('description').value = item.description || '';
             document.getElementById('status').value = item.status;
             
-            document.getElementById('form-title').textContent = 'Sửa Item';
-            document.getElementById('submit-btn').textContent = 'Cập nhật';
-            document.getElementById('cancel-btn').style.display = 'inline-block';
+            const formTitle = document.getElementById('form-title');
+            formTitle.innerHTML = '<span class="icon">✏️</span> Sửa Item';
+            
+            const submitBtn = document.getElementById('submit-btn');
+            submitBtn.querySelector('.btn-text').textContent = 'Cập nhật';
+            
+            document.getElementById('cancel-btn').style.display = 'flex';
             
             // Scroll to form
-            document.querySelector('.form-section').scrollIntoView({ behavior: 'smooth' });
+            document.querySelector('.form-section').scrollIntoView({ behavior: 'smooth', block: 'start' });
         } else {
             showError('Lỗi khi tải item: ' + result.error);
         }
@@ -162,8 +211,13 @@ function cancelEdit() {
 function resetForm() {
     document.getElementById('item-form').reset();
     document.getElementById('item-id').value = '';
-    document.getElementById('form-title').textContent = 'Thêm Item Mới';
-    document.getElementById('submit-btn').textContent = 'Thêm Item';
+    
+    const formTitle = document.getElementById('form-title');
+    formTitle.innerHTML = '<span class="icon">➕</span> Thêm Item Mới';
+    
+    const submitBtn = document.getElementById('submit-btn');
+    submitBtn.querySelector('.btn-text').textContent = 'Thêm Item';
+    
     document.getElementById('cancel-btn').style.display = 'none';
 }
 

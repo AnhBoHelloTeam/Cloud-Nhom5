@@ -47,14 +47,23 @@ async function initDatabase() {
     console.log(`   Database: ${process.env.DB_NAME}`);
     console.log(`   User: ${process.env.DB_USER}`);
     
-    db = await mysql.createConnection({
+    const connectionConfig = {
       host: process.env.DB_HOST,
       user: process.env.DB_USER,
       password: process.env.DB_PASSWORD,
       database: process.env.DB_NAME,
       port: parseInt(process.env.DB_PORT) || 3306,
-      connectTimeout: 10000 // 10 seconds timeout
-    });
+      connectTimeout: 10000, // 10 seconds timeout
+      waitForConnections: true,
+      queueLimit: 0
+    };
+
+    // Add SSL for Railway MySQL
+    if (process.env.DB_HOST.includes('railway') || process.env.DB_HOST.includes('rlwy.net')) {
+      connectionConfig.ssl = { rejectUnauthorized: false };
+    }
+
+    db = await mysql.createConnection(connectionConfig);
     
     // Create table if not exists
     await db.execute(`
