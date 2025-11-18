@@ -5,4 +5,13 @@ node_modules/
 .vscode/
 .idea/
 
+# Build artifacts
+dist/
+build/
+*.tgz
+
+# Environment
+.env.local
+.env.*.local
+
 
