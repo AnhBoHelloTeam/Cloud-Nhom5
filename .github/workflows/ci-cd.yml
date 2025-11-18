@@ -47,8 +47,7 @@ jobs:
     needs: build-and-test
     if: |
       (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master') &&
-      github.event_name == 'push' &&
-      secrets.RAILWAY_TOKEN != ''
+      github.event_name == 'push'
     
     steps:
       - name: 📥 Checkout code
@@ -67,6 +66,7 @@ jobs:
         run: npm run build
 
       - name: 🚀 Deploy to Railway
+        if: secrets.RAILWAY_TOKEN != ''
         uses: bervProject/railway-deploy@v1.0.1
         with:
           railway_token: ${{ secrets.RAILWAY_TOKEN }}
@@ -74,10 +74,10 @@ jobs:
         continue-on-error: true
 
       - name: ✅ Deployment status
-        if: success()
+        if: success() && secrets.RAILWAY_TOKEN != ''
         run: echo "✅ Successfully deployed to Railway!"
 
       - name: ⚠️ Deployment skipped
-        if: failure()
-        run: echo "⚠️ Deployment skipped (no Railway token or not main branch)"
+        if: secrets.RAILWAY_TOKEN == ''
+        run: echo "⚠️ Deployment skipped (no Railway token configured)"
 
