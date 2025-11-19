@@ -8,10 +8,14 @@
     "dev": "nodemon server.js",
     "build": "echo 'Building application...' && npm ci",
     "test": "echo 'Running tests...' && node -e \"console.log('✅ All tests passed!')\"",
-    "lint": "echo 'Linting code...' && echo '✅ No linting errors'",
-    "prestart": "npm run build"
+    "lint": "echo 'Linting code...' && echo '✅ No linting errors'"
   },
-  "keywords": ["nodejs", "mysql", "crud", "railway"],
+  "keywords": [
+    "nodejs",
+    "mysql",
+    "crud",
+    "railway"
+  ],
   "author": "",
   "license": "ISC",
   "dependencies": {
@@ -24,5 +28,3 @@
     "nodemon": "^3.0.2"
   }
 }
-
-
