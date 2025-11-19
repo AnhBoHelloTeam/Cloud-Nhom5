@@ -67,8 +67,12 @@ async function initDatabase() {
       connectTimeout: 10000, // 10 seconds timeout
       waitForConnections: true,
       queueLimit: 0,
-      ssl: "amazon", // Railway MySQL requires SSL
     };
+
+    // Add SSL for public connections (external proxies)
+    if (process.env.DB_HOST.includes("proxy.rlwy.net")) {
+      connectionConfig.ssl = { rejectUnauthorized: false };
+    }
 
     db = await mysql.createConnection(connectionConfig);
 
@@ -238,13 +242,11 @@ app.get("/api/health", async (req, res) => {
     await db.execute("SELECT 1");
     res.json({ success: true, message: "Database connection healthy" });
   } catch (error) {
-    res
-      .status(500)
-      .json({
-        success: false,
-        error: "Database connection failed",
-        details: error.message,
-      });
+    res.status(500).json({
+      success: false,
+      error: "Database connection failed",
+      details: error.message,
+    });
   }
 });
 
