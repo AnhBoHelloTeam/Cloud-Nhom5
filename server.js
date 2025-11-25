@@ -59,24 +59,33 @@ async function initDatabase() {
     console.log(`   User: ${process.env.DB_USER}`);
     console.log(`   Port: ${process.env.DB_PORT || 3306}`);
 
+    // Determine correct host based on environment
+    let dbHost = process.env.DB_HOST;
+
+    // If running locally with internal hostname, try external hostname
+    if (dbHost === "mysql.railway.internal") {
+      console.log(
+        "ℹ️  Detected Railway internal hostname, using external proxy for local connection"
+      );
+      dbHost = "yamabiko.proxy.rlwy.net";
+      process.env.DB_PORT = "46284";
+    }
+
     const connectionConfig = {
-      host: process.env.DB_HOST,
+      host: dbHost,
       user: process.env.DB_USER,
       password: process.env.DB_PASSWORD,
       database: process.env.DB_NAME,
       port: parseInt(process.env.DB_PORT) || 3306,
-      connectTimeout: 30000,
-      acquireTimeout: 30000,
+      connectTimeout: 60000,
       waitForConnections: true,
       connectionLimit: 5,
       queueLimit: 0,
-      enableKeepalive: true,
-      keepaliveInitialDelayMs: 0,
     };
 
     // Add SSL for public connections (external proxies like Railway)
-    if (process.env.DB_HOST && process.env.DB_HOST.includes("proxy.rlwy.net")) {
-      connectionConfig.ssl = "Amazon RDS" || { rejectUnauthorized: false };
+    if (dbHost.includes("proxy.rlwy.net")) {
+      connectionConfig.ssl = { rejectUnauthorized: false };
     }
 
     // Use createPool instead of createConnection to maintain persistent connection
@@ -121,7 +130,9 @@ async function initDatabase() {
     console.error("   2. Verify .env file has correct credentials");
     console.error("   3. Check firewall/network settings");
     console.error("   4. If using Railway MySQL, verify connection string");
-    console.error("   5. Try increasing connectTimeout to 60000");
+    console.error("   5. Check if you're running locally or on Railway:");
+    console.error("      - Local: Use yamabiko.proxy.rlwy.net:46284");
+    console.error("      - Railway: Use mysql.railway.internal:3306");
     console.error("");
     console.warn(
       "⚠️  Server will continue running but database operations will fail"
