@@ -4,11 +4,11 @@ const cors = require("cors");
 require("dotenv").config();
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 8080;
 
 // Log environment for debugging
 console.log("🔍 Environment Check:");
-console.log("   PORT:", process.env.PORT || "(using default 3000)");
+console.log("   PORT:", process.env.PORT || "(using default 8080)");
 console.log("   DB_HOST:", process.env.DB_HOST || "(missing)");
 console.log("   DB_NAME:", process.env.DB_NAME || "(missing)");
 
@@ -57,6 +57,7 @@ async function initDatabase() {
     console.log(`   Host: ${process.env.DB_HOST}`);
     console.log(`   Database: ${process.env.DB_NAME}`);
     console.log(`   User: ${process.env.DB_USER}`);
+    console.log(`   Port: ${process.env.DB_PORT || 3306}`);
 
     const connectionConfig = {
       host: process.env.DB_HOST,
@@ -64,29 +65,50 @@ async function initDatabase() {
       password: process.env.DB_PASSWORD,
       database: process.env.DB_NAME,
       port: parseInt(process.env.DB_PORT) || 3306,
-      connectTimeout: 10000, // 10 seconds timeout
+      connectTimeout: 30000,
+      acquireTimeout: 30000,
       waitForConnections: true,
+      connectionLimit: 5,
       queueLimit: 0,
+      enableKeepalive: true,
+      keepaliveInitialDelayMs: 0,
     };
 
-    // Add SSL for public connections (external proxies)
-    if (process.env.DB_HOST.includes("proxy.rlwy.net")) {
-      connectionConfig.ssl = { rejectUnauthorized: false };
+    // Add SSL for public connections (external proxies like Railway)
+    if (process.env.DB_HOST && process.env.DB_HOST.includes("proxy.rlwy.net")) {
+      connectionConfig.ssl = "Amazon RDS" || { rejectUnauthorized: false };
     }
 
-    db = await mysql.createConnection(connectionConfig);
+    // Use createPool instead of createConnection to maintain persistent connection
+    db = mysql.createPool(connectionConfig);
+
+    // Test the connection
+    let testConnection;
+    try {
+      testConnection = await db.getConnection();
+      await testConnection.execute("SELECT 1");
+      testConnection.release();
+    } catch (testError) {
+      throw testError;
+    }
 
     // Create table if not exists
-    await db.execute(`
-      CREATE TABLE IF NOT EXISTS items (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        name VARCHAR(255) NOT NULL,
-        description TEXT,
-        status VARCHAR(50) DEFAULT 'active',
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-      )
-    `);
+    try {
+      const conn = await db.getConnection();
+      await conn.execute(`
+        CREATE TABLE IF NOT EXISTS items (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          name VARCHAR(255) NOT NULL,
+          description TEXT,
+          status VARCHAR(50) DEFAULT 'active',
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        )
+      `);
+      conn.release();
+    } catch (tableError) {
+      console.warn("⚠️  Could not create table:", tableError.message);
+    }
 
     dbConnected = true;
     console.log("✅ Database connected and table created successfully");
@@ -97,11 +119,9 @@ async function initDatabase() {
     console.error("🔍 Troubleshooting:");
     console.error("   1. Check if MySQL service is running");
     console.error("   2. Verify .env file has correct credentials");
-    console.error(
-      "   3. Ensure database exists: CREATE DATABASE " + process.env.DB_NAME
-    );
-    console.error("   4. Check firewall/network settings");
-    console.error("   5. If using Railway MySQL, verify connection string");
+    console.error("   3. Check firewall/network settings");
+    console.error("   4. If using Railway MySQL, verify connection string");
+    console.error("   5. Try increasing connectTimeout to 60000");
     console.error("");
     console.warn(
       "⚠️  Server will continue running but database operations will fail"
@@ -128,20 +148,26 @@ function checkDbConnection(req, res, next) {
 
 // GET all items
 app.get("/api/items", checkDbConnection, async (req, res) => {
+  let conn;
   try {
-    const [rows] = await db.execute(
+    conn = await db.getConnection();
+    const [rows] = await conn.execute(
       "SELECT * FROM items ORDER BY created_at DESC"
     );
     res.json({ success: true, data: rows });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
+  } finally {
+    if (conn) conn.release();
   }
 });
 
 // GET single item by ID
 app.get("/api/items/:id", checkDbConnection, async (req, res) => {
+  let conn;
   try {
-    const [rows] = await db.execute("SELECT * FROM items WHERE id = ?", [
+    conn = await db.getConnection();
+    const [rows] = await conn.execute("SELECT * FROM items WHERE id = ?", [
       req.params.id,
     ]);
     if (rows.length === 0) {
@@ -150,12 +176,16 @@ app.get("/api/items/:id", checkDbConnection, async (req, res) => {
     res.json({ success: true, data: rows[0] });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
+  } finally {
+    if (conn) conn.release();
   }
 });
 
 // CREATE new item
 app.post("/api/items", checkDbConnection, async (req, res) => {
+  let conn;
   try {
+    conn = await db.getConnection();
     const { name, description, status } = req.body;
 
     if (!name) {
@@ -164,34 +194,38 @@ app.post("/api/items", checkDbConnection, async (req, res) => {
         .json({ success: false, error: "Name is required" });
     }
 
-    const [result] = await db.execute(
+    const [result] = await conn.execute(
       "INSERT INTO items (name, description, status) VALUES (?, ?, ?)",
       [name, description || "", status || "active"]
     );
 
-    const [newItem] = await db.execute("SELECT * FROM items WHERE id = ?", [
+    const [newItem] = await conn.execute("SELECT * FROM items WHERE id = ?", [
       result.insertId,
     ]);
     res.status(201).json({ success: true, data: newItem[0] });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
+  } finally {
+    if (conn) conn.release();
   }
 });
 
 // UPDATE item
 app.put("/api/items/:id", checkDbConnection, async (req, res) => {
+  let conn;
   try {
+    conn = await db.getConnection();
     const { name, description, status } = req.body;
 
     // Check if item exists
-    const [existing] = await db.execute("SELECT * FROM items WHERE id = ?", [
+    const [existing] = await conn.execute("SELECT * FROM items WHERE id = ?", [
       req.params.id,
     ]);
     if (existing.length === 0) {
       return res.status(404).json({ success: false, error: "Item not found" });
     }
 
-    await db.execute(
+    await conn.execute(
       "UPDATE items SET name = ?, description = ?, status = ? WHERE id = ?",
       [
         name || existing[0].name,
@@ -201,29 +235,35 @@ app.put("/api/items/:id", checkDbConnection, async (req, res) => {
       ]
     );
 
-    const [updated] = await db.execute("SELECT * FROM items WHERE id = ?", [
+    const [updated] = await conn.execute("SELECT * FROM items WHERE id = ?", [
       req.params.id,
     ]);
     res.json({ success: true, data: updated[0] });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
+  } finally {
+    if (conn) conn.release();
   }
 });
 
 // DELETE item
 app.delete("/api/items/:id", checkDbConnection, async (req, res) => {
+  let conn;
   try {
-    const [existing] = await db.execute("SELECT * FROM items WHERE id = ?", [
+    conn = await db.getConnection();
+    const [existing] = await conn.execute("SELECT * FROM items WHERE id = ?", [
       req.params.id,
     ]);
     if (existing.length === 0) {
       return res.status(404).json({ success: false, error: "Item not found" });
     }
 
-    await db.execute("DELETE FROM items WHERE id = ?", [req.params.id]);
+    await conn.execute("DELETE FROM items WHERE id = ?", [req.params.id]);
     res.json({ success: true, message: "Item deleted successfully" });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
+  } finally {
+    if (conn) conn.release();
   }
 });
 
@@ -238,8 +278,10 @@ app.get("/api/health", async (req, res) => {
     });
   }
 
+  let conn;
   try {
-    await db.execute("SELECT 1");
+    conn = await db.getConnection();
+    await conn.execute("SELECT 1");
     res.json({ success: true, message: "Database connection healthy" });
   } catch (error) {
     res.status(500).json({
@@ -247,6 +289,8 @@ app.get("/api/health", async (req, res) => {
       error: "Database connection failed",
       details: error.message,
     });
+  } finally {
+    if (conn) conn.release();
   }
 });
 
